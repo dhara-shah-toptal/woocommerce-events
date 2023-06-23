@@ -59,7 +59,8 @@ class Settings_Page extends Base {
 		 * Add a settings page for this plugin to the main menu
 		 *
 		 */
-		\add_menu_page( \__( 'woocommerce-events Settings', W_TEXTDOMAIN ), W_NAME, 'manage_options', W_TEXTDOMAIN, array( $this, 'display_plugin_admin_page' ), 'dashicons-hammer', 90 );
+
+		\add_submenu_page( 'edit.php?post_type=event', \__( 'WooCommerce Event Email Settings', W_TEXTDOMAIN ), \__( 'WooCommerce Event Email Settings', W_TEXTDOMAIN ), 'manage_options', W_TEXTDOMAIN, array( $this, 'display_plugin_admin_page' ), 90 );
 	}
 
 	/**
@@ -83,7 +84,6 @@ class Settings_Page extends Base {
 		return \array_merge(
 			array(
 				'settings' => '<a href="' . \admin_url( 'options-general.php?page=' . W_TEXTDOMAIN ) . '">' . \__( 'Settings', W_TEXTDOMAIN ) . '</a>',
-				'donate'   => '<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=danielemte90@alice.it&item_name=Donation">' . \__( 'Donate', W_TEXTDOMAIN ) . '</a>',
 			),
 			$links
 		);

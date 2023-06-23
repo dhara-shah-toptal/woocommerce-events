@@ -28,7 +28,7 @@ if ( !defined( 'ABSPATH' ) ) {
 
 define( 'W_VERSION', '1.0.0' );
 define( 'W_TEXTDOMAIN', 'woocommerce-events' );
-define( 'W_NAME', 'woocommerce-events' );
+define( 'W_NAME', 'Woocommerce Events' );
 define( 'W_PLUGIN_ROOT', plugin_dir_path( __FILE__ ) );
 define( 'W_PLUGIN_ABSOLUTE', __FILE__ );
 define( 'W_MIN_PHP_VERSION', '7.4' );
@@ -74,7 +74,7 @@ require_once W_PLUGIN_ROOT . 'functions/debug.php';
 
 
 // Documentation to integrate GitHub, GitLab or BitBucket https://github.com/YahnisElsts/plugin-update-checker/blob/master/README.md
-Puc_v4_Factory::buildUpdateChecker( 'https://github.com/user-name/repo-name/', __FILE__, 'unique-plugin-or-theme-slug' );
+Puc_v4_Factory::buildUpdateChecker( 'https://github.com/dhara-shah-toptal/woocommerce-events' , __FILE__, 'unique-plugin-or-theme-slug');
 
 if ( ! wp_installing() ) {
 	register_activation_hook( W_TEXTDOMAIN . '/' . W_TEXTDOMAIN . '.php', array( new \woocommerce_events\Backend\ActDeact, 'activate' ) );
