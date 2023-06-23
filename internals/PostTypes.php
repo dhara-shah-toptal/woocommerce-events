@@ -27,6 +27,8 @@ class PostTypes extends Base {
 	public function initialize() { // phpcs:ignore
 		parent::initialize();
 
+		$gravity_form_id = 1;
+
 		\add_action( 'init', array( $this, 'load_cpts' ) );
 		\add_action( 'add_meta_boxes', array( $this, 'add_custom_meta_box_event_details' ), 10, 2 );
 		\add_action( 'post_edit_form_tag', array( $this, 'update_event_details_form' ));
@@ -35,6 +37,8 @@ class PostTypes extends Base {
 		// Add bubble notification for cpt pending
 		\add_action( 'admin_menu', array( $this, 'pending_cpt_bubble' ), 999 );
 		\add_filter( 'pre_get_posts', array( $this, 'filter_search' ) );
+
+		\add_action( 'gform_after_submission_'.$gravity_form_id, array( $this, 'create_event_post_content' ), 10, 2 );
 	}
 
 	/**
@@ -303,4 +307,118 @@ class PostTypes extends Base {
 		return false;
 	}
 
+	/**
+	 * Create Event Custom Post When
+	 *
+	 * @since 1.2.0
+	 * @return void
+	 */
+	public function create_event_post_content($entry, $form ) { //phpcs:ignore
+		//Change the field Ids according to tehe Gravity Form
+		$event_name_field_id = 1;
+		$event_date_field_id = 3;
+		$event_city_field_id = 5;
+		$event_description_field_id = 6;
+		$event_image_field_id = 7;
+
+
+		//Get the Data from Gravity Form using Field IDs
+		$event_name = rgar( $entry, $event_name_field_id );
+		$event_date = rgar( $entry, $event_date_field_id );
+		$event_city = rgar( $entry, $event_city_field_id );
+		$event_description = rgar( $entry, $event_description_field_id );
+		$event_image = rgar( $entry, $event_image_field_id );
+
+		$event_id = wp_insert_post(array(
+			'post_type'    =>'event',
+			'post_title'   =>  $event_name,
+			'post_content' =>  $event_description,
+			'post_status' => 'publish'
+		));
+		if (!empty($event_id)){
+			update_post_meta($event_id, '_we_event_name', $event_name);
+			update_post_meta($event_id, '_we_event_date', $event_date);
+			update_post_meta($event_id, '_we_event_city', $event_city);
+			update_post_meta($event_id, '_we_event_description', $event_description);
+
+
+			$attachment_id = $this->create_image_id($event_image,$event_id);
+			$featured_image = set_post_thumbnail($event_id,$attachment_id);
+			$event_attachment_file = $this->get_file_array($attachment_id);
+
+			update_post_meta($event_id, '_we_event_image', $event_attachment_file);
+		}
+	}
+
+	/**
+	 * Create the image attachment and return the new media upload id.
+	 * Modified for current requirement
+	 * @author Joshua David Nelson, josh@joshuadnelson.com
+	 * @see http://codex.wordpress.org/Function_Reference/wp_insert_attachment#Example
+	 * @link https://joshuadnelson.com/programmatically-add-images-to-media-library/
+	 * @param string $image_url The url to the image you're adding to the Media library.
+	 * @param int $parent_post_id Optional. Use to attach the media file to a specific post.
+	 */
+	function create_image_id( $image_url, $parent_post_id = null ) {
+		// Bail if the image url isn't valid
+		if( empty( $image_url ) || ! esc_url( $image_url ) )
+			return false;
+		// Escape the url, just to be save
+		$image_url = esc_url( $image_url );
+		// Cache info on the wp uploads dir
+		$wp_upload_dir = wp_upload_dir();
+
+		// File base name, e.g. image.jpg
+		$file_base_name = basename( $image_url );
+
+		// Check the type of file. We'll use this as the 'post_mime_type'.
+		$filetype = wp_check_filetype( $file_base_name, null );
+		// error check
+		if( !empty( $filetype ) && is_array( $filetype ) ) {
+			// Create attachment title - basically, pull out the text
+			$post_title = preg_replace( '/\.[^.]+$/', '', $file_base_name );
+			// Prepare an array of post data for the attachment.
+			$attachment = array(
+				'guid'           => $wp_upload_dir['url'] . '/' . basename( $image_url ),
+				'post_mime_type' => $filetype['type'],
+				'post_title'     => esc_attr( $post_title ),
+				'post_content'   => '',
+				'post_status'    => 'inherit'
+			);
+			// Set the post parent id if there is one
+			if( ! is_null( $parent_post_id ) && absint( $parent_post_id ) )
+				$attachment['post_parent'] = absint( $parent_post_id );
+			// Insert the attachment.
+			$attach_id = wp_insert_attachment( $attachment, $image_url );
+			//Error check
+			if( !is_wp_error( $attach_id ) ) {
+				//Generate wp attachment meta data
+				if( file_exists( ABSPATH . 'wp-admin/includes/image.php') && file_exists( ABSPATH . 'wp-admin/includes/media.php') ) {
+					require_once( ABSPATH . 'wp-admin/includes/image.php' );
+					require_once( ABSPATH . 'wp-admin/includes/media.php' );
+					$attach_data = wp_generate_attachment_metadata( $attach_id, $image_url );
+					wp_update_attachment_metadata( $attach_id, $attach_data );
+				} // end if file exists check
+			} // end if error check
+			return $attach_id;
+		} else {
+			return false;
+		} // end if $filetype
+	} // end function create_image_id
+
+	function get_file_array($attachment_id){
+
+		$file_name = basename ( get_attached_file( $attachment_id ) );
+		$file_url = wp_get_attachment_url( $attachment_id );
+		$file_type = wp_check_filetype( $file_url );
+
+		$file_array = array(
+			'file' => $file_name,
+			'url' => $file_url,
+			'type' => $file_type,
+			'error' => false
+		);
+
+		return $file_array;
+	}
 }

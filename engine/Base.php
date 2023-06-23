@@ -28,7 +28,7 @@ class Base {
 	 * @return bool
 	 */
 	public function initialize() {
-		$this->settings = \w_get_settings();
+		//$this->settings = \w_get_settings();
 
 		return true;
 	}
