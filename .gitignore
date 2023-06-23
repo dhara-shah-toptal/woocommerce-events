@@ -26,6 +26,8 @@ nbproject
 *.sublime-workspace
 node_modules
 package-lock.json
+dhara.shah.toptal
+dhara.shah.toptal.pub
 
 # Folders to ignore
 .hg
@@ -39,3 +41,5 @@ tests/_output/
 woocommerce-events/vendor/
 tests/_support/_generated/
 woocommerce-events/assets/build/
+
+
