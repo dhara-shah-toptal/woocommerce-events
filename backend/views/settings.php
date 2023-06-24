@@ -23,11 +23,6 @@
 			[event_date]
 			";
 			$woocommerce_event_default_subject = 'New Event [event_name] in your city [event_city]';
-			//$woocommerce_event_default_subject = 'New Event [event_name] in your city [event_city]';
-
-			//$woocommerce_event_subject = get_option('woocommerce_event_subject','New Event [event_name] in your city [event_city]');
-			$woocommerce_event_default_message = get_option( W_TEXTDOMAIN . '-settings');
-			print_r($woocommerce_event_default_message['message']);
 
 
 			$cmb = new_cmb2_box(
