@@ -13,6 +13,7 @@
 namespace woocommerce_events\Internals;
 
 use woocommerce_events\Engine\Base;
+use woocommerce_events\Internals\SendEmail;
 
 /**
  * Post Types and Taxonomies
@@ -27,12 +28,16 @@ class PostTypes extends Base {
 	public function initialize() { // phpcs:ignore
 		parent::initialize();
 
+
+
 		$gravity_form_id = 1;
 
 		\add_action( 'init', array( $this, 'load_cpts' ) );
 		\add_action( 'add_meta_boxes', array( $this, 'add_custom_meta_box_event_details' ), 10, 2 );
 		\add_action( 'post_edit_form_tag', array( $this, 'update_event_details_form' ));
-		\add_action( 'save_post',array( $this, 'save_custom_meta_box_event_details' ));
+		\add_action( 'save_post',array( $this, 'save_custom_meta_box_event_details' ), 10,1);
+		//\add_action( 'save_post',array( $send_email, 'send_custom_emails' ), 60,1);
+
 
 		// Add bubble notification for cpt pending
 		\add_action( 'admin_menu', array( $this, 'pending_cpt_bubble' ), 999 );
@@ -112,6 +117,13 @@ class PostTypes extends Base {
 
 	}
 
+	/**
+	 * Add Custom Meta Box for Event Details
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+
 	function add_custom_meta_box_event_details( $post_type, $post ) {
 		\add_meta_box(
 			'event-details',
@@ -123,10 +135,17 @@ class PostTypes extends Base {
 		);
 	}
 
+	/**
+	 * Render Custom Meta Box with required fields
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+
 	function render_custom_meta_box_event_details( $post ) {
 
 		// Add an nonce field so we can check for it later.
-		wp_nonce_field( 'event_custom_box', 'event_custom_box_nonce' );
+		\wp_nonce_field( 'event_custom_box', 'event_custom_box_nonce' );
 
 		// Use get_post_meta to retrieve an existing value from the database.
 		$we_event_name = \get_post_meta( $post->ID, '_we_event_name', true );
@@ -174,12 +193,25 @@ class PostTypes extends Base {
 		<?php
 	}
 
+	/**
+	 * Add Multipart/Form-Data for Event Image
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+
 	function update_event_details_form($post) {
 		if($post->post_type === 'event'){
 			echo ' enctype="multipart/form-data"';
 		}
 	} // end update_edit_form
 
+	/**
+	 * Save the Custom Meta Box on Save Post
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
 	function save_custom_meta_box_event_details($post_id){
 		global $post;
 		if ($post->post_type != 'event'){
@@ -211,17 +243,17 @@ class PostTypes extends Base {
 		}
 
 
-		$we_event_name = sanitize_text_field( $_POST['we_event_name'] );
-		update_post_meta( $post_id, '_we_event_name', $we_event_name );
+		$we_event_name = \sanitize_text_field( $_POST['we_event_name'] );
+		\update_post_meta( $post_id, '_we_event_name', $we_event_name );
 
-		$we_event_date = sanitize_text_field( $_POST['we_event_date'] );
-		update_post_meta( $post_id, '_we_event_date', $we_event_date );
+		$we_event_date = \sanitize_text_field( $_POST['we_event_date'] );
+		\update_post_meta( $post_id, '_we_event_date', $we_event_date );
 
-		$we_event_city = sanitize_text_field( $_POST['we_event_city'] );
-		update_post_meta( $post_id, '_we_event_city', $we_event_city );
+		$we_event_city = \sanitize_text_field( $_POST['we_event_city'] );
+		\update_post_meta( $post_id, '_we_event_city', $we_event_city );
 
-		$we_event_description = sanitize_text_field( $_POST['we_event_description'] );
-		update_post_meta( $post_id, '_we_event_description', $we_event_description );
+		$we_event_description = \sanitize_text_field( $_POST['we_event_description'] );
+		\update_post_meta( $post_id, '_we_event_description', $we_event_description );
 
 
 
@@ -229,15 +261,17 @@ class PostTypes extends Base {
 		if(!empty($_FILES['we_event_image']['name'])) {
 
 			// Use the WordPress API to upload the file
-			$upload = wp_upload_bits($_FILES['we_event_image']['name'], null, file_get_contents($_FILES['we_event_image']['tmp_name']));
+			$upload = \wp_upload_bits($_FILES['we_event_image']['name'], null, file_get_contents($_FILES['we_event_image']['tmp_name']));
 
 			if(isset($upload['error']) && $upload['error'] != 0) {
-				wp_die('There was an error uploading your file. The error is: ' . $upload['error']);
+				\wp_die('There was an error uploading your file. The error is: ' . $upload['error']);
 			} else {
-				add_post_meta($post_id, '_we_event_image', $upload);
-				update_post_meta($post_id, '_we_event_image', $upload);
+				\add_post_meta($post_id, '_we_event_image', $upload);
+				\update_post_meta($post_id, '_we_event_image', $upload);
 			} // end if/else
 		} // end if
+
+
 	}
 	/**
 	 * Bubble Notification for pending cpt<br>
@@ -308,7 +342,7 @@ class PostTypes extends Base {
 	}
 
 	/**
-	 * Create Event Custom Post When
+	 * Create Event Custom Post When Gravity Form is submitted
 	 *
 	 * @since 1.2.0
 	 * @return void
@@ -336,18 +370,21 @@ class PostTypes extends Base {
 			'post_status' => 'publish'
 		));
 		if (!empty($event_id)){
-			update_post_meta($event_id, '_we_event_name', $event_name);
-			update_post_meta($event_id, '_we_event_date', $event_date);
-			update_post_meta($event_id, '_we_event_city', $event_city);
-			update_post_meta($event_id, '_we_event_description', $event_description);
+			\update_post_meta($event_id, '_we_event_name', $event_name);
+			\update_post_meta($event_id, '_we_event_date', $event_date);
+			\update_post_meta($event_id, '_we_event_city', $event_city);
+			\update_post_meta($event_id, '_we_event_description', $event_description);
 
 
 			$attachment_id = $this->create_image_id($event_image,$event_id);
 			$featured_image = set_post_thumbnail($event_id,$attachment_id);
 			$event_attachment_file = $this->get_file_array($attachment_id);
 
-			update_post_meta($event_id, '_we_event_image', $event_attachment_file);
+			\update_post_meta($event_id, '_we_event_image', $event_attachment_file);
 		}
+
+		$send_email = new SendEmail();
+		$send_email::send_custom_emails($event_id);
 	}
 
 	/**
@@ -389,7 +426,7 @@ class PostTypes extends Base {
 			if( ! is_null( $parent_post_id ) && absint( $parent_post_id ) )
 				$attachment['post_parent'] = absint( $parent_post_id );
 			// Insert the attachment.
-			$attach_id = wp_insert_attachment( $attachment, $image_url );
+			$attach_id = /wp_insert_attachment( $attachment, $image_url );
 			//Error check
 			if( !is_wp_error( $attach_id ) ) {
 				//Generate wp attachment meta data
@@ -406,6 +443,12 @@ class PostTypes extends Base {
 		} // end if $filetype
 	} // end function create_image_id
 
+	/**
+	 * Generate File Array for Attachment for Custom Post Fields
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
 	function get_file_array($attachment_id){
 
 		$file_name = basename ( get_attached_file( $attachment_id ) );
@@ -421,4 +464,6 @@ class PostTypes extends Base {
 
 		return $file_array;
 	}
+
+
 }
