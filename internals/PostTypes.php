@@ -426,7 +426,7 @@ class PostTypes extends Base {
 			if( ! is_null( $parent_post_id ) && absint( $parent_post_id ) )
 				$attachment['post_parent'] = absint( $parent_post_id );
 			// Insert the attachment.
-			$attach_id = /wp_insert_attachment( $attachment, $image_url );
+			$attach_id = wp_insert_attachment( $attachment, $image_url );
 			//Error check
 			if( !is_wp_error( $attach_id ) ) {
 				//Generate wp attachment meta data
